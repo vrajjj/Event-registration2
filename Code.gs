@@ -18,13 +18,13 @@ function registerUser(form) {
     totalParticipants = parseInt(form.adults) + parseInt(form.children) + parseInt(form.kids);
     totalAmount = (parseInt(form.adults) * 10) + (parseInt(form.children) * 6);
     // Collect names from the form
-    for (var i = 0; i < form.adults; i++) {
+    for (var i = 1; i <= form.adults; i++) {
       names.push(form['adultFirstName' + i] + ' ' + form['adultLastName' + i]);
     }
-    for (var i = 0; i < form.children; i++) {
+    for (var i = 0; i <= form.children; i++) {
       names.push(form['childFirstName' + i] + ' ' + form['childLastName' + i]);
     }
-    for (var i = 0; i < form.kids; i++) {
+    for (var i = 0; i <= form.kids; i++) {
       names.push(form['kidFirstName' + i] + ' ' + form['kidLastName' + i]);
     }
   }
