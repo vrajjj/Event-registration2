@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Event Registration Form</title>
+    <script>
+        function showHideFields() {
+            var type = document.getElementById('registrationType').value;
+            var childrenFields = document.getElementById('childrenFields');
+            childrenFields.style.display = (type === 'Family') ? 'block' : 'none';
+        }
+
+        function calculateTotal() {
+            var adults = parseInt(document.getElementById('adults').value) || 0;
+            var children = parseInt(document.getElementById('children').value) || 0;
+            var kids = parseInt(document.getElementById('kids').value) || 0;
+            document.getElementById('totalAmount').value = adults * 100 + children * 50 + kids * 25; // Assuming some pricing logic
+        }
+
+        function validateForm() {
+            var emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            var email = document.getElementById('email').value;
+
+            if (!emailPattern.test(email)) {
+                alert('Please enter a valid email address.');
+                return false;
+            }
+
+            // Additional validation for other fields can be added here
+
+            return true;
+        }
+
+        function submitForm() {
+            if (!validateForm()) return;
+
+            var formData = {
+                registrationType: document.getElementById('registrationType').value,
+                adults: document.getElementById('adults').value,
+                children: document.getElementById('children').value,
+                kids: document.getElementById('kids').value,
+                email: document.getElementById('email').value,
+                totalAmount: document.getElementById('totalAmount').value
+            };
+
+            google.script.run.withSuccessHandler(function(referenceNumber) {
+                alert('Registration successful! Your reference number is ' + referenceNumber);
+            }).processForm(formData);
+        }
+    </script>
+</head>
+<body>
+    <h1>Event Registration Form</h1>
+    <form onsubmit="submitForm(); return false;">
+        <label>Registration Type:</label>
+        <select id="registrationType" onchange="showHideFields(); calculateTotal();">
+            <option value="Individual">Individual</option>
+            <option value="Family">Family</option>
+        </select><br>
+        <label>Adults:</label>
+        <input type="number" id="adults" oninput="calculateTotal();" required><br>
+        <div id="childrenFields" style="display:none;">
+            <label>Children:</label>
+            <input type="number" id="children" oninput="calculateTotal();"><br>
+            <label>Kids:</label>
+            <input type="number" id="kids" oninput="calculateTotal();"><br>
+        </div>
+        <label>Email:</label>
+        <input type="text" id="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" required><br>
+        <label>Total Amount:</label>
+        <input type="text" id="totalAmount" readonly><br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
