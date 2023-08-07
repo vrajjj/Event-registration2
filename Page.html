@@ -30,6 +30,10 @@
         checkInDiv.style.display = 'block';
         individualDiv.style.display = 'none';
         familyDiv.style.display = 'block';
+        // Update participant fields for Family/Group
+        updateParticipants('adults');
+        updateParticipants('children');
+        updateParticipants('kids');
       }
     }
 
@@ -172,7 +176,9 @@
     <button onclick="submitForm()">Submit</button>
     <div id="errorDiv"></div>
   </div>
+
   <div id="progress" style="display:none;">Processing...</div>
+
   <div id="confirmation" style="display:none;">
     <h2>Confirmation</h2>
     <p>Total Participants: <span id="totalParticipants"></span></p>
