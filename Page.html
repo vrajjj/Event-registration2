@@ -46,7 +46,7 @@
 
     // Function to update participant name fields based on the number of participants
     function updateParticipants(type) {
-      var count = document.getElementById(type).value;
+      var count = document.getElementById(type).value || 0;
       var container = document.getElementById(type + 'Names');
       container.innerHTML = '';
       for (var i = 1; i <= count; i++) {
@@ -54,9 +54,11 @@
         div.className = 'name-fields';
         var firstNameInput = document.createElement('input');
         firstNameInput.type = 'text';
+        firstNameInput.name = type + 'FirstName' + i; // Added name attribute
         firstNameInput.placeholder = 'First name of ' + type.slice(0, -1) + ' ' + i;
         var lastNameInput = document.createElement('input');
         lastNameInput.type = 'text';
+        lastNameInput.name = type + 'LastName' + i; // Added name attribute
         lastNameInput.placeholder = 'Last name of ' + type.slice(0, -1) + ' ' + i;
         div.appendChild(firstNameInput);
         div.appendChild(lastNameInput);
