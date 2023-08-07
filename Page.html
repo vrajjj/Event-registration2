@@ -1,47 +1,186 @@
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Page')
-      .setTitle('Event Registration Form')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Event Registration Form</title>
+  <style>
+    .name-fields {
+      display: flex;
+    }
+    .name-fields input {
+      margin-right: 10px;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+  <script>
+    // Function to update the form based on the registration type
+    function updateForm() {
+      var registrationType = document.getElementById('registrationType').value;
+      var checkInDiv = document.getElementById('checkInDiv');
+      var individualDiv = document.getElementById('individualDiv');
+      var familyDiv = document.getElementById('familyDiv');
+      
+      if (registrationType === 'Individual') {
+        checkInDiv.style.display = 'none';
+        individualDiv.style.display = 'block';
+        familyDiv.style.display = 'none';
+        resetParticipants(); // Reset participant fields if changed to Individual
+      } else {
+      } else {
+        checkInDiv.style.display = 'block';
+        individualDiv.style.display = 'none';
+        familyDiv.style.display = 'block';
+      }
+    }
 
-function registerUser(form) {
-  var sheet = SpreadsheetApp.openById('19sh5IfChjom2QnX_2EnhE-NLyPXOqlvlJTH-eiyPHj4').getActiveSheet();
-  var referenceNumber = Utilities.getUuid();
-  var totalAmount = 0;
-  var totalParticipants = 0;
-  var names = [];
-  
-  if (form.registrationType === 'Individual') {
-    totalParticipants = 1;
-    names.push(form.firstName + ' ' + form.lastName);
-  } else {
-    totalParticipants = parseInt(form.adults) + parseInt(form.children) + parseInt(form.kids);
-    totalAmount = (parseInt(form.adults) * 10) + (parseInt(form.children) * 6);
-    names = names.concat(form.adultNames, form.childNames, form.kidNames);
-  }
+    // Function to reset participant fields
+    function resetParticipants() {
+      document.getElementById('adultNames').innerHTML = '';
+      document.getElementById('childNames').innerHTML = '';
+      document.getElementById('kidNames').innerHTML = '';
+    }
 
-  var rowData = [
-    form.registrationType,
-    form.checkInType || '',
-    form.email,
-    names.join(', '),
-    totalParticipants,
-    totalAmount,
-    referenceNumber
-  ];
-  
-  sheet.appendRow(rowData);
+    // Function to update participant name fields based on the number of participants
+    function updateParticipants(type) {
+      var count = document.getElementById(type).value;
+      var container = document.getElementById(type + 'Names');
+      container.innerHTML = '';
+      for (var i = 1; i <= count; i++) {
+        var div = document.createElement('div');
+        div.className = 'name-fields';
+        var firstNameInput = document.createElement('input');
+        firstNameInput.type = 'text';
+        firstNameInput.placeholder = 'First name of ' + type.slice(0, -1) + ' ' + i;
+        var lastNameInput = document.createElement('input');
+        lastNameInput.type = 'text';
+        lastNameInput.placeholder = 'Last name of ' + type.slice(0, -1) + ' ' + i;
+        div.appendChild(firstNameInput);
+        div.appendChild(lastNameInput);
+        container.appendChild(div);
+      }
+    }
 
-  MailApp.sendEmail({
-    to: form.email,
-    subject: 'Registration Confirmation',
-    body: 'Thank you for registering. Your reference number is ' + referenceNumber
-  });
+    function validateForm() {
+      var registrationType = document.getElementById('registrationType').value;
+      var email = document.getElementById('email').value;
+      var errorDiv = document.getElementById('errorDiv');
+      errorDiv.innerHTML = '';
 
-  return {
-    totalParticipants: totalParticipants,
-    names: names,
-    referenceNumber: referenceNumber,
-    totalAmount: totalAmount
-  };
-}
+      if (!email) {
+        errorDiv.innerHTML += '<p class="error">Email is required.</p>';
+        return false;
+      }
+
+      if (registrationType === 'Individual') {
+        var firstName = document.getElementById('firstName').value;
+        var lastName = document.getElementById('lastName').value;
+        if (!firstName || !lastName) {
+          errorDiv.innerHTML += '<p class="error">First name and last name are required.</p>';
+          return false;
+        }
+      } else {
+        var adults = document.getElementById('adults').value;
+        var children = document.getElementById('children').value;
+        var kids = document.getElementById('kids').value;
+        if (!adults || !children || !kids) {
+          errorDiv.innerHTML += '<p class="error">Number of adults, children, and kids are required.</p>';
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function submitForm() {
+      if (!validateForm()) return;
+
+      document.getElementById('formDiv').style.display = 'none';
+      document.getElementById('progress').style.display = 'block';
+
+      var form = {
+        registrationType: document.getElementById('registrationType').value,
+        checkInType: document.getElementById('checkInType').value,
+        email: document.getElementById('email').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        adults: document.getElementById('adults').value,
+        children: document.getElementById('children').value,
+        kids: document.getElementById('kids').value,
+      };
+      
+      google.script.run.withSuccessHandler(showConfirmation).registerUser(form);
+    }
+
+    function showConfirmation(result) {
+      document.getElementById('progress').style.display = 'none';
+      document.getElementById('confirmation').style.display = 'block';
+      document.getElementById('totalParticipants').innerText = result.totalParticipants;
+      document.getElementById('names').innerText = result.names.join(', ');
+      document.getElementById('referenceNumber').innerText = result.referenceNumber;
+      document.getElementById('totalAmount').innerText = '$' + result.totalAmount;
+    }
+
+    function copyToClipboard() {
+      var textArea = document.createElement("textarea");
+      textArea.value = document.getElementById('referenceNumber').innerText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  </script>
+</head>
+<body onload="updateForm()">
+  <h1>Event Registration Form</h1>
+  <div id="formDiv">
+    <!-- Registration Type -->
+    <label>Type of registration:</label>
+    <select id="registrationType" onchange="updateForm()" required>
+      <option value="Individual">Individual</option>
+      <option value="Family/Group">Family/Group</option>
+    </select>
+    <!-- Check-in Type -->
+    <div id="checkInDiv" style="display:none;">
+      <label>How will the participants check-in?</label>
+      <select id="checkInType" required>
+        <option value="Together">Together</option>
+        <option value="Separately">Separately</option>
+      </select>
+    </div>
+    <!-- Email -->
+    <label>Email:</label>
+    <input type="email" id="email" required />
+    <!-- Individual Fields -->
+    <div id="individualDiv">
+      <div class="name-fields">
+        <input type="text" id="firstName" placeholder="First name of Adult" required />
+        <input type="text" id="lastName" placeholder="Last name of Adult" required />
+      </div>
+    </div>
+    <!-- Family/Group Fields -->
+    <div id="familyDiv" style="display:none;">
+      <label>Adults:</label>
+      <input type="number" id="adults" onchange="updateParticipants('adults')" required />
+      <div id="adultNames"></div>
+      <label>Children (6-12 years):</label>
+      <input type="number" id="children" onchange="updateParticipants('children')" required />
+      <div id="childNames"></div>
+      <label>Kids (under 6):</label>
+      <input type="number" id="kids" onchange="updateParticipants('kids')" required />
+      <div id="kidNames"></div>
+    </div>
+    <button onclick="submitForm()">Submit</button>
+    <div id="errorDiv"></div>
+  </div>
+  <div id="progress" style="display:none;">Processing...</div>
+  <div id="confirmation" style="display:none;">
+    <h2>Confirmation</h2>
+    <p>Total Participants: <span id="totalParticipants"></span></p>
+    <p>Names: <span id="names"></span></p>
+    <p>Reference Number: <span id="referenceNumber"></span> <button onclick="copyToClipboard()">Copy to Clipboard</button></p>
+    <p>Total Amount: <span id="totalAmount"></span></p>
+    <p>PayPal ID: PayPal.me/GujaratiFranconia - Payment should be made as Friends and Family.</p>
+  </div>
+</body>
+</html>
