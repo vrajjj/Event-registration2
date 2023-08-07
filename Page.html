@@ -1,74 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Event Registration Form</title>
-    <script>
-        function showHideFields() {
-            var type = document.getElementById('registrationType').value;
-            var childrenFields = document.getElementById('childrenFields');
-            childrenFields.style.display = (type === 'Family') ? 'block' : 'none';
-        }
+  <title>Event Registration Form</title>
+  <style>
+    .name-fields {
+      display: flex;
+    }
+    .name-fields input {
+      margin-right: 10px;
+    }
+  </style>
+  <script>
+    function updateForm() {
+      var registrationType = document.getElementById('registrationType').value;
+      var checkInDiv = document.getElementById('checkInDiv');
+      var individualDiv = document.getElementById('individualDiv');
+      var familyDiv = document.getElementById('familyDiv');
+      
+      if (registrationType === 'Individual') {
+        checkInDiv.style.display = 'none';
+        individualDiv.style.display = 'block';
+        familyDiv.style.display = 'none';
+      } else {
+        checkInDiv.style.display = 'block';
+        individualDiv.style.display = 'none';
+        familyDiv.style.display = 'block';
+      }
+    }
 
-        function calculateTotal() {
-            var adults = parseInt(document.getElementById('adults').value) || 0;
-            var children = parseInt(document.getElementById('children').value) || 0;
-            var kids = parseInt(document.getElementById('kids').value) || 0;
-            document.getElementById('totalAmount').value = adults * 100 + children * 50 + kids * 25; // Assuming some pricing logic
-        }
+    function updateParticipants(type) {
+      var count = document.getElementById(type).value;
+      var container = document.getElementById(type + 'Names');
+      container.innerHTML = '';
+      for (var i = 1; i <= count; i++) {
+        var div = document.createElement('div');
+        div.className = 'name-fields';
+        var firstNameInput = document.createElement('input');
+        firstNameInput.placeholder = 'First name of ' + type + ' ' + i;
+        var lastNameInput = document.createElement('input');
+        lastNameInput.placeholder = 'Last name of ' + type + ' ' + i;
+        div.appendChild(firstNameInput);
+        div.appendChild(lastNameInput);
+        container.appendChild(div);
+      }
+    }
+    
+    function submitForm() {
+      document.getElementById('progress').style.display = 'block';
+      var form = {
+        registrationType: document.getElementById('registrationType').value,
+        checkInType: document.getElementById('checkInType').value,
+        email: document.getElementById('email').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        adults: document.getElementById('adults').value,
+        children: document.getElementById('children').value,
+        kids: document.getElementById('kids').value,
+        // Add other form fields here
+      };
+      
+      google.script.run.withSuccessHandler(showConfirmation).registerUser(form);
+    }
 
-        function validateForm() {
-            var emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            var email = document.getElementById('email').value;
+    function showConfirmation(result) {
+      document.getElementById('progress').style.display = 'none';
+      document.getElementById('confirmation').style.display = 'block';
+      document.getElementById('totalParticipants').innerText = result.totalParticipants;
+      document.getElementById('names').innerText = result.names.join(', ');
+      document.getElementById('referenceNumber').innerText = result.referenceNumber;
+      document.getElementById('totalAmount').innerText = '$' + result.totalAmount;
+    }
 
-            if (!emailPattern.test(email)) {
-                alert('Please enter a valid email address.');
-                return false;
-            }
-
-            // Additional validation for other fields can be added here
-
-            return true;
-        }
-
-        function submitForm() {
-            if (!validateForm()) return;
-
-            var formData = {
-                registrationType: document.getElementById('registrationType').value,
-                adults: document.getElementById('adults').value,
-                children: document.getElementById('children').value,
-                kids: document.getElementById('kids').value,
-                email: document.getElementById('email').value,
-                totalAmount: document.getElementById('totalAmount').value
-            };
-
-            google.script.run.withSuccessHandler(function(referenceNumber) {
-                alert('Registration successful! Your reference number is ' + referenceNumber);
-            }).processForm(formData);
-        }
-    </script>
+    function copyToClipboard() {
+      var textArea = document.createElement("textarea");
+      textArea.value = document.getElementById('referenceNumber').innerText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  </script>
 </head>
-<body>
-    <h1>Event Registration Form</h1>
-    <form onsubmit="submitForm(); return false;">
-        <label>Registration Type:</label>
-        <select id="registrationType" onchange="showHideFields(); calculateTotal();">
-            <option value="Individual">Individual</option>
-            <option value="Family">Family</option>
-        </select><br>
-        <label>Adults:</label>
-        <input type="number" id="adults" oninput="calculateTotal();" required><br>
-        <div id="childrenFields" style="display:none;">
-            <label>Children:</label>
-            <input type="number" id="children" oninput="calculateTotal();"><br>
-            <label>Kids:</label>
-            <input type="number" id="kids" oninput="calculateTotal();"><br>
-        </div>
-        <label>Email:</label>
-        <input type="text" id="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" required><br>
-        <label>Total Amount:</label>
-        <input type="text" id="totalAmount" readonly><br>
-        <button type="submit">Submit</button>
-    </form>
+<body onload="updateForm()">
+  <h1>Event Registration Form</h1>
+  <div id="formDiv">
+    <!-- Registration Type -->
+    <label>Type of registration:</label>
+    <select id="registrationType" onchange="updateForm()" required>
+      <option value="Individual">Individual</option>
+      <option value="Family/Group">Family/Group</option>
+    </select>
+    <!-- Check-in Type -->
+    <div id="checkInDiv" style="display:none;">
+      <label>How will the participants check-in?</label>
+      <select id="checkInType" required>
+        <option value="Together">Together</option>
+        <option value="Separately">Separately</option>
+      </select>
+    </div>
+    <!-- Email -->
+    <label>Email:</label>
+    <input type="email" id="email" required />
+    <!-- Individual Fields -->
+    <div id="individualDiv">
+      <div class="name-fields">
+        <input type="text" id="firstName" placeholder="First name of Adult" required />
+        <input type="text" id="lastName" placeholder="Last name of Adult" required />
+      </div>
+    </div>
+    <!-- Family/Group Fields -->
+    <div id="familyDiv" style="display:none;">
+      <label>Adults:</label>
+      <input type="number" id="adults" onchange="updateParticipants('adults')" required />
+      <div id="adultNames"></div>
+      <label>Children (6-12 years):</label>
+      <input type="number" id="children" onchange="updateParticipants('children')" required />
+      <div id="childNames"></div>
+      <label>Kids (under 6):</label>
+      <input type="number" id="kids" onchange="updateParticipants('kids')" required />
+      <div id="kidNames"></div>
+    </div>
+    <button onclick="submitForm()">Submit</button>
+  </div>
+  <div id="progress" style="display:none;">Processing...</div>
+  <div id="confirmation" style="display:none;">
+    <h2>Confirmation</h2>
+    <p>Total Participants: <span id="totalParticipants"></span></p>
+    <p>Names: <span id="names"></span></p>
+    <p>Reference Number: <span id="referenceNumber"></span> <button onclick="copyToClipboard()">Copy to Clipboard</button></p>
+    <p>Total Amount: <span id="totalAmount"></span></p>
+    <p>PayPal ID: PayPal.me/GujaratiFranconia - Payment should be made as Friends and Family.</p>
+  </div>
 </body>
 </html>
